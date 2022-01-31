@@ -116,6 +116,7 @@ local function render()
     pipeline:close()
 
     local x, y = love.mouse.getPosition()
+    print('mouse x, y', x, y)
     local rad = 50
     pipeline:open('circle_under_mouse')
     pipeline:push(y)
@@ -161,11 +162,11 @@ local function mainloop()
             --local msg = 'love.timer.getTime() = %f'
             --print(colorize('%{blue}' .. format(msg, love.timer.getTime())))
 
-            --render()
+            render()
         end
         --]]
 
-        render()
+        --render()
 
         --[[
         Ограничение кадров в секунду до 60
