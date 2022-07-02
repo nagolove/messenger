@@ -1,34 +1,13 @@
 print('hello. I scene from separated thread')
 
---local tl = require "tl"
 require "love"
 require "love_inc".require_pls_nographic()
-require 'pipeline'
-
---require "love.timer"
+local Pipeline = require 'pipeline'
 
 love.filesystem.setRequirePath("?.lua;?/init.lua;scenes/empty_mt/?.lua")
 local i18n = require "i18n"
---local colorize = require 'ansicolors2'.ansicolors
---local format = string.format
-
---require "external"
---require "common"
-
---package.path = package.path .. ";scenes/automato/?.lua"
-
---local cam = require "camera".new()
---local gr = love.graphics
---local imgui = require "imgui"
---local inspect = require "inspect"
---local keyconfig = require "keyconfig"
---local next = next
---local timer = require "Timer"
 
 local event_channel = love.thread.getChannel("event_channel")
---local draw_ready_channel = love.thread.getChannel("draw_ready_channel")
---local graphic_command_channel = love.thread.getChannel("graphic_command_channel")
---local graphic_code_channel = love.thread.getChannel("graphic_code_channel")
 
 local mx, my = 0, 0
 
@@ -58,7 +37,19 @@ local function init()
     print("translated", i18n.translate('welcome'))
     print("translated", i18n('welcome'))
 
-    local rendercode = [[
+    pipeline:pushCode('print_fps', [[
+    local getFPS = love.timer.getFPS
+    while true do
+        local msg = string.format('fps %d', getFPS())
+        --print('msg', msg)
+        love.graphics.setColor{0, 0, 0, 1}
+        love.graphics.print(msg, 0, 0)
+        --love.graphics.setColor{1, 1, 1, 1}
+        coroutine.yield()
+    end
+    ]])
+
+    pipeline:pushCode('text', [[
     while true do
         local w, h = love.graphics.getDimensions()
         local x, y = math.random() * w, math.random() * h
@@ -67,10 +58,9 @@ local function init()
 
         coroutine.yield()
     end
-    ]]
-    pipeline:pushCode('text', rendercode)
+    ]])
 
-    rendercode = [[
+    pipeline:pushCode('circle_under_mouse', [[
     while true do
         local y = graphic_command_channel:demand()
         local x = graphic_command_channel:demand()
@@ -80,31 +70,16 @@ local function init()
 
         coroutine.yield()
     end
-    ]]
-    pipeline:pushCode('circle_under_mouse', rendercode)
+    ]])
 
     -- Допустимо-ли переопределение функций? Или добавить специальный флаг?
     -- Нормально-ли использовать константы?
     pipeline:pushCode('clear', [[
     while true do
         love.graphics.clear{0.5, 0.5, 0.5}
-
         coroutine.yield()
     end
     ]])
-
-    --[[
-    -- Добавлять-ли такую функцию? Будет использоваться?
-    -- Стоимость реализации и возможности применения.
-    pipeline:pushCodes({
-        { 
-            'text',
-            'code',
-        },
-        {},
-        {},
-    })
-    --]]
 
     last_render = love.timer.getTime()
 end
@@ -115,14 +90,18 @@ local function render()
     pipeline:open('text')
     pipeline:close()
 
+    pipeline:openAndClose('print_fps')
+
+    --[[
     local x, y = love.mouse.getPosition()
-    print('mouse x, y', x, y)
+    --print('mouse x, y', x, y)
     local rad = 50
     pipeline:open('circle_under_mouse')
     pipeline:push(y)
     pipeline:push(x)
     pipeline:push(rad)
     pipeline:close()
+    --]]
 
     pipeline:sync()
 end
@@ -159,17 +138,8 @@ local function mainloop()
         local pause = 1. / 300.
         if nt - last_render >= pause then
             last_render = nt
-            --local msg = 'love.timer.getTime() = %f'
-            --print(colorize('%{blue}' .. format(msg, love.timer.getTime())))
-
             render()
         end
-        --]]
-
-        --render()
-
-        --[[
-        Ограничение кадров в секунду до 60
         --]]
 
         --love.timer.sleep(0.0008)
