@@ -1,42 +1,23 @@
 print('hello. I scene from separated thread')
 
+--require 'konstants'
 require "love"
 require "love_inc".require_pls_nographic()
 local Pipeline = require 'pipeline'
 
-love.filesystem.setRequirePath("?.lua;?/init.lua;scenes/empty_mt/?.lua")
-local i18n = require "i18n"
+love.filesystem.setRequirePath("?.lua;?/init.lua;scenes/messenger/?.lua")
 
 local event_channel = love.thread.getChannel("event_channel")
 
 local mx, my = 0, 0
-
 local last_render: number
 
 local pipeline = Pipeline.new()
-
--- Как часто перекомпилировать код рисовки?
--- Варианты - 
---  * по таймеру
---  * используя метод :peek() на каждой итерации цикла
--- Сейчас функция компилируется один раз при загрузке файла исходного текста
--- потока.
+local thread: love.thread.Thread
+local msg = require 'messenger'
+local Channel: msg.Object
 
 local function init()
-    i18n.set('en.welcome', 'welcome to this program')
-    i18n.load({
-        en = {
-            good_bye = "good-bye!",
-            age_msg = "your age is %{age}.",
-            phone_msg = {
-                one = "you have one new message.",
-                other = "you have %{count} new messages."
-            }
-        }
-    })
-    print("translated", i18n.translate('welcome'))
-    print("translated", i18n('welcome'))
-
     pipeline:pushCode('print_fps', [[
     local getFPS = love.timer.getFPS
     while true do
@@ -82,6 +63,16 @@ local function init()
     ]])
 
     last_render = love.timer.getTime()
+
+    local addr_str: string
+    Channel, addr_str = msg.init()
+    print('addr_str', addr_str)
+    msg.connect(addr_str)
+    msg.push('it works!')
+    thread = love.thread.newThread("scenes/messenger/thread.lua")
+    thread:start(addr_str)
+    print('thread started')
+    --]]
 end
 
 local function render()

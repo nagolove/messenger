@@ -3,62 +3,34 @@ local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 th
 
 require("love")
 require("love_inc").require_pls_nographic()
-require('pipeline')
+local Pipeline = require('pipeline')
 
-
-
-love.filesystem.setRequirePath("?.lua;?/init.lua;scenes/empty_mt/?.lua")
-local i18n = require("i18n")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+love.filesystem.setRequirePath("?.lua;?/init.lua;scenes/messenger/?.lua")
 
 local event_channel = love.thread.getChannel("event_channel")
 
-
-
-
 local mx, my = 0, 0
-
 local last_render
 
 local pipeline = Pipeline.new()
-
-
-
-
-
-
-
+local thread
+local msg = require('messenger')
+local Channel
 
 local function init()
-   i18n.set('en.welcome', 'welcome to this program')
-   i18n.load({
-      en = {
-         good_bye = "good-bye!",
-         age_msg = "your age is %{age}.",
-         phone_msg = {
-            one = "you have one new message.",
-            other = "you have %{count} new messages.",
-         },
-      },
-   })
-   print("translated", i18n.translate('welcome'))
-   print("translated", i18n('welcome'))
+   pipeline:pushCode('print_fps', [[
+    local getFPS = love.timer.getFPS
+    while true do
+        local msg = string.format('fps %d', getFPS())
+        --print('msg', msg)
+        love.graphics.setColor{0, 0, 0, 1}
+        love.graphics.print(msg, 0, 0)
+        --love.graphics.setColor{1, 1, 1, 1}
+        coroutine.yield()
+    end
+    ]])
 
-   local rendercode = [[
+   pipeline:pushCode('text', [[
     while true do
         local w, h = love.graphics.getDimensions()
         local x, y = math.random() * w, math.random() * h
@@ -67,10 +39,9 @@ local function init()
 
         coroutine.yield()
     end
-    ]]
-   pipeline:pushCode('text', rendercode)
+    ]])
 
-   rendercode = [[
+   pipeline:pushCode('circle_under_mouse', [[
     while true do
         local y = graphic_command_channel:demand()
         local x = graphic_command_channel:demand()
@@ -80,33 +51,28 @@ local function init()
 
         coroutine.yield()
     end
-    ]]
-   pipeline:pushCode('circle_under_mouse', rendercode)
+    ]])
 
 
 
    pipeline:pushCode('clear', [[
     while true do
         love.graphics.clear{0.5, 0.5, 0.5}
-
         coroutine.yield()
     end
     ]])
 
-
-
-
-
-
-
-
-
-
-
-
-
-
    last_render = love.timer.getTime()
+
+   local addr_str
+   Channel, addr_str = msg.init()
+   print('addr_str', addr_str)
+   msg.connect(addr_str)
+   msg.push('it works!')
+   thread = love.thread.newThread("scenes/messenger/thread.lua")
+   thread:start(addr_str)
+   print('thread started')
+
 end
 
 local function render()
@@ -115,14 +81,18 @@ local function render()
    pipeline:open('text')
    pipeline:close()
 
-   local x, y = love.mouse.getPosition()
-   print('mouse x, y', x, y)
-   local rad = 50
-   pipeline:open('circle_under_mouse')
-   pipeline:push(y)
-   pipeline:push(x)
-   pipeline:push(rad)
-   pipeline:close()
+   pipeline:openAndClose('print_fps')
+
+
+
+
+
+
+
+
+
+
+
 
    pipeline:sync()
 end
@@ -159,17 +129,8 @@ local function mainloop()
       local pause = 1. / 300.
       if nt - last_render >= pause then
          last_render = nt
-
-
-
          render()
       end
-
-
-
-
-
-
 
 
 
