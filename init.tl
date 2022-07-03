@@ -67,8 +67,10 @@ local function init()
     local addr_str: string
     Channel, addr_str = msg.init()
     print('addr_str', addr_str)
+
     msg.connect(addr_str)
     msg.push('it works!')
+
     thread = love.thread.newThread("scenes/messenger/thread.lua")
     thread:start(addr_str)
     print('thread started')
