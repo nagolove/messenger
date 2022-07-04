@@ -14,18 +14,15 @@ local last_render: number
 
 local pipeline = Pipeline.new()
 local thread: love.thread.Thread
-local msg = require 'messenger'
-local Channel: msg.Object
+local msg = require 'messenger2'
 
 local function init()
     pipeline:pushCode('print_fps', [[
     local getFPS = love.timer.getFPS
     while true do
         local msg = string.format('fps %d', getFPS())
-        --print('msg', msg)
         love.graphics.setColor{0, 0, 0, 1}
         love.graphics.print(msg, 0, 0)
-        --love.graphics.setColor{1, 1, 1, 1}
         coroutine.yield()
     end
     ]])
@@ -64,16 +61,32 @@ local function init()
 
     last_render = love.timer.getTime()
 
+    --[[
     local addr_str: string
     Channel, addr_str = msg.init()
     print('addr_str', addr_str)
 
     msg.connect(addr_str)
     msg.push('it works!')
+    --]]
+
+    for i = 1, 5 do
+        msg.new("channel_" .. tonumber(i))
+    end
+
+    local channel_name = "KANAL_331";
+    local channel = msg.new(channel_name);
+    for i = 9, 1, -1 do
+        channel:push(i)
+    end
 
     thread = love.thread.newThread("scenes/messenger/thread.lua")
-    thread:start(addr_str)
+    thread:start(channel_name)
     print('thread started')
+
+    for _ = 9, 1, -1 do
+        channel:push(0)
+    end
     --]]
 end
 
@@ -85,7 +98,6 @@ local function render()
 
     pipeline:openAndClose('print_fps')
 
-    --[[
     local x, y = love.mouse.getPosition()
     --print('mouse x, y', x, y)
     local rad = 50
