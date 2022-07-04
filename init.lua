@@ -61,15 +61,6 @@ local function init()
 
    last_render = love.timer.getTime()
 
-
-
-
-
-
-
-
-
-
    local state = msg.init()
    print('state', state)
 
@@ -80,7 +71,7 @@ local function init()
    local channel_name = "KANAL_331";
    local channel = msg.new(channel_name);
    for i = 9, 1, -1 do
-      channel:push(i)
+      msg.push(channel, i)
    end
 
    thread = love.thread.newThread("scenes/messenger/thread.lua")
@@ -88,7 +79,7 @@ local function init()
    print('thread started')
 
    for _ = 9, 1, -1 do
-      channel:push(0)
+      msg.push(channel, 0)
    end
 
 end
