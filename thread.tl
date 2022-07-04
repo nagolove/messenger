@@ -1,13 +1,13 @@
 print('hi from thread')
 
 local vars = {...}
-local msg_addr = vars[1]
+local channel_name = vars[1]
 
---assert(type(msg_addr) == "string")
-print('thread msg_addr', msg_addr)
+assert(type(channel_name) == "string")
+print('channel_name', channel_name)
 
 local msg = require 'messenger2'
-local chan = msg.new() -- А где идентификатор, имя канала?
+local chan = msg.new(channel_name) -- А где идентификатор, имя канала?
 
 local v: any
 repeat
