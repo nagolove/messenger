@@ -70,6 +70,9 @@ local function init()
 
 
 
+   local state = msg.init()
+   print('state', state)
+
    for i = 1, 5 do
       msg.new("channel_" .. tonumber(i))
    end
@@ -81,7 +84,7 @@ local function init()
    end
 
    thread = love.thread.newThread("scenes/messenger/thread.lua")
-   thread:start(channel_name)
+   thread:start(channel_name, state)
    print('thread started')
 
    for _ = 9, 1, -1 do
