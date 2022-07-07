@@ -1,4 +1,7 @@
-local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local math = _tl_compat and _tl_compat.math or math; print('hello. I scene from separated thread')
+local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local math = _tl_compat and _tl_compat.math or math; local pcall = _tl_compat and _tl_compat.pcall or pcall; local table = _tl_compat and _tl_compat.table or table
+
+
+print('hello. I scene from separated thread')
 
 
 require("love")
@@ -9,14 +12,90 @@ love.filesystem.setRequirePath("?.lua;?/init.lua;scenes/messenger/?.lua")
 
 local event_channel = love.thread.getChannel("event_channel")
 
+local colorize = require('ansicolors2').ansicolors
 local mx, my = 0, 0
 local last_render
 
 local pipeline = Pipeline.new()
 local thread
+
 local msg = require('messenger2')
 
+local inspect = require('inspect')
+
+local Test = {}
+
+
+
+
+local tests = {}
+
+table.insert(tests, {
+   desc = [[Создание каналов. 
+Только числовые данные.
+Получение данных со стороны потока.]],
+   func = function()
+
+
+      local state = msg.init_messenger()
+      print('state', state)
+
+      for i = 1, 5 do
+         msg.new("channel_" .. tonumber(i))
+      end
+
+      local channel_name = "KANAL_331";
+      local channel = msg.new(channel_name);
+      for i = 9, 1, -1 do
+         msg.push(channel, i)
+      end
+
+
+
+      thread = love.thread.newThread("scenes/messenger/thread.lua")
+      thread:start(channel_name, state, 'test1')
+      print('thread started')
+
+      for _ = 9, 1, -1 do
+         msg.push(channel, 0)
+      end
+
+
+
+
+   end,
+})
+
+table.insert(tests, {
+   desc = [[Создание каналов. 
+Только строковые данные. 
+Получение данных со стороны потока.]],
+   func = function()
+
+
+      local state = msg.init_messenger()
+      print('state', state)
+
+      local channel_name = "KANAL_331";
+      local channel = msg.new(channel_name);
+
+      for i = 9, 1, -1 do
+         msg.push(channel, i)
+      end
+
+      thread = love.thread.newThread("scenes/messenger/thread.lua")
+      thread:start(channel_name, state, 'test2')
+      print('thread started')
+
+      for _ = 9, 1, -1 do
+         msg.push(channel, 0)
+      end
+
+   end,
+})
+
 local function init()
+
    pipeline:pushCode('print_fps', [[
     local getFPS = love.timer.getFPS
     while true do
@@ -59,29 +138,22 @@ local function init()
     end
     ]])
 
+
    last_render = love.timer.getTime()
 
-   local state = msg.init()
-   print('state', state)
+   print('Доступные тесты:')
 
-   for i = 1, 5 do
-      msg.new("channel_" .. tonumber(i))
+   for _, T in ipairs(tests) do
+      print(colorize("%{blue}" .. T.desc))
+      print("-----------------------------------------")
    end
 
-   local channel_name = "KANAL_331";
-   local channel = msg.new(channel_name);
-   for i = 9, 1, -1 do
-      msg.push(channel, i)
+   local ok, errmsg = pcall(function()
+      tests[1].func()
+   end)
+   if not ok then
+      error("Test failed with: " .. errmsg)
    end
-
-   thread = love.thread.newThread("scenes/messenger/thread.lua")
-   thread:start(channel_name, state)
-   print('thread started')
-
-   for _ = 9, 1, -1 do
-      msg.push(channel, 0)
-   end
-
 end
 
 local function render()
