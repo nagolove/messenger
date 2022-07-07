@@ -1,3 +1,6 @@
+-- vim: set colorcolumn=85
+-- vim: fdm=marker
+
 print('hello. I scene from separated thread')
 
 --require 'konstants'
@@ -9,14 +12,90 @@ love.filesystem.setRequirePath("?.lua;?/init.lua;scenes/messenger/?.lua")
 
 local event_channel = love.thread.getChannel("event_channel")
 
+local colorize = require 'ansicolors2'.ansicolors
 local mx, my = 0, 0
 local last_render: number
 
 local pipeline = Pipeline.new()
 local thread: love.thread.Thread
+-- Потоко-безопасная очередь
 local msg = require 'messenger2'
 
+local inspect = require 'inspect'
+
+local record Test
+    func: function()
+    desc: string
+end
+
+local tests: {Test} = {}
+
+table.insert(tests, {
+    desc = [[Создание каналов. 
+Только числовые данные.
+Получение данных со стороны потока.]],
+    func = function()
+        -- {{{
+
+        local state = msg.init_messenger()
+        print('state', state)
+
+        for i = 1, 5 do
+            msg.new("channel_" .. tonumber(i))
+        end
+
+        local channel_name = "KANAL_331";
+        local channel = msg.new(channel_name);
+        for i = 9, 1, -1 do
+            msg.push(channel, i)
+        end
+
+        --msg.push(msg.new('channel_3'), 100)
+
+        thread = love.thread.newThread("scenes/messenger/thread.lua")
+        thread:start(channel_name, state, 'test1')
+        print('thread started')
+
+        for _ = 9, 1, -1 do
+            msg.push(channel, 0)
+        end
+
+        --print(msg.pop(msg.new('channel_3')))
+        --]]
+        -- }}}
+    end
+})
+
+table.insert(tests, {
+    desc = [[Создание каналов. 
+Только строковые данные. 
+Получение данных со стороны потока.]],
+    func = function()
+        -- {{{
+
+        local state = msg.init_messenger()
+        print('state', state)
+
+        local channel_name = "KANAL_331";
+        local channel = msg.new(channel_name);
+
+        for i = 9, 1, -1 do
+            msg.push(channel, i)
+        end
+
+        thread = love.thread.newThread("scenes/messenger/thread.lua")
+        thread:start(channel_name, state, 'test2')
+        print('thread started')
+
+        for _ = 9, 1, -1 do
+            msg.push(channel, 0)
+        end
+        -- }}}
+    end
+})
+
 local function init()
+    -- {{{ render stuff
     pipeline:pushCode('print_fps', [[
     local getFPS = love.timer.getFPS
     while true do
@@ -58,30 +137,23 @@ local function init()
         coroutine.yield()
     end
     ]])
+    -- }}}
 
     last_render = love.timer.getTime()
 
-    local state = msg.init()
-    print('state', state)
+    print('Доступные тесты:')
 
-    for i = 1, 5 do
-        msg.new("channel_" .. tonumber(i))
+    for _, T in ipairs(tests) do
+        print(colorize("%{blue}" .. T.desc))
+        print("-----------------------------------------")
     end
 
-    local channel_name = "KANAL_331";
-    local channel = msg.new(channel_name);
-    for i = 9, 1, -1 do
-        msg.push(channel, i)
+    local ok, errmsg = pcall(function()
+        tests[1].func()
+    end) as (boolean, string)
+    if not ok then
+        error("Test failed with: " .. errmsg)
     end
-
-    thread = love.thread.newThread("scenes/messenger/thread.lua")
-    thread:start(channel_name, state)
-    print('thread started')
-
-    for _ = 9, 1, -1 do
-        msg.push(channel, 0)
-    end
-    --]]
 end
 
 local function render()
