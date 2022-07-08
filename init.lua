@@ -23,6 +23,7 @@ local Test = {}
 
 local tests = {}
 
+
 table.insert(tests, {
    desc = [[Создание канала. 
 Только числовые данные.
@@ -51,6 +52,7 @@ table.insert(tests, {
 
    end,
 })
+
 
 table.insert(tests, {
    desc = [[Создание канала. 
@@ -81,6 +83,7 @@ table.insert(tests, {
 
    end,
 })
+
 
 table.insert(tests, {
    desc = [[Создание канала. 
@@ -116,6 +119,7 @@ table.insert(tests, {
    end,
 })
 
+
 table.insert(tests, {
    desc = [[Создание каналов. 
 Только числовые данные.
@@ -150,10 +154,12 @@ table.insert(tests, {
    end,
 })
 
+
 table.insert(tests, {
    desc = [[Создание каналов. 
-Только числовые данные.
-Получение данных со стороны другого потока.]],
+Числовые и строковые данные. 
+Превышение лимита заполнения очереди.
+]],
    func = function()
 
 
@@ -163,35 +169,27 @@ table.insert(tests, {
       local channel_name = "KANAL_331";
       local channel = msg.new(channel_name);
 
-      print('msg', inspect(msg))
+      for i = 1, msg.QUEUE_SIZE * 2 do
+         if math.random() > 0.5 then
+            msg.push(channel, i)
+         else
+            msg.push(channel, "str_" .. tostring(i))
+         end
+      end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+      thread = love.thread.newThread("scenes/messenger/thread.lua")
+      thread:start(channel_name, state, 'full_pop')
+      print('thread started')
 
 
    end,
 })
 
+
 table.insert(tests, {
    desc = [[Создание каналов. 
-Только строковые данные. 
-Получение данных со стороны потока.]],
+Смешанные данные - числа и строки. 
+Получение значений со стороны создающего потока.]],
    func = function()
 
 
@@ -201,17 +199,61 @@ table.insert(tests, {
       local channel_name = "KANAL_331";
       local channel = msg.new(channel_name);
 
-      for i = 9, 1, -1 do
-         msg.push(channel, i)
+      for i = 1, 1000 do
+         local value
+         if math.random() > 0.5 then
+            value = tonumber(i)
+         else
+            value = "str" .. tostring(i)
+         end
+         msg.push(channel, value)
+         print('pushed', value)
       end
 
-      thread = love.thread.newThread("scenes/messenger/thread.lua")
-      thread:start(channel_name, state, 'test4')
-      print('thread started')
+      local value
+      repeat
+         value = msg.pop(channel)
+         print('popped value', value)
+      until not value
 
-      for _ = 9, 1, -1 do
-         msg.push(channel, 0)
+   end,
+})
+
+
+table.insert(tests, {
+   desc = [[Создание каналов. 
+Смешанные данные - числа и строки. Вставка и удаление в разном порядке.
+Получение значений со стороны создающего потока.]],
+   func = function()
+
+
+      local state = msg.init_messenger()
+      print('state', state)
+
+      local channel_name = "KANAL_331";
+      local channel = msg.new(channel_name);
+
+      for i = 1, 1000 do
+         local num = math.random(1, 10)
+         for j = 1, num do
+            local value
+            if math.random() > 0.5 then
+               value = tonumber(i)
+            else
+               value = "str" .. tostring(i)
+            end
+            msg.push(channel, value)
+            print('pushed', value)
+         end
+         for j = 1, num do
+            print(msg.pop(channel))
+         end
       end
+
+      print('----------------------------------')
+      msg.channel_print_strings(channel)
+      msg.channel_print_numbers(channel)
+      print('----------------------------------')
 
    end,
 })
@@ -283,7 +325,8 @@ local function init()
 
 
 
-      callt(5)
+      callt(7)
+
 
    end)
    if not ok then
@@ -292,6 +335,7 @@ local function init()
 end
 
 local function render()
+
    pipeline:openAndClose('clear')
 
    pipeline:open('text')
@@ -307,13 +351,13 @@ local function render()
    pipeline:push(rad)
    pipeline:close()
 
-
    pipeline:sync()
+
 end
 
 local function mainloop()
-   while true do
 
+   while true do
       local events = event_channel:pop()
       if events then
          for _, e in ipairs(events) do
@@ -334,16 +378,15 @@ local function mainloop()
       end
 
       local nt = love.timer.getTime()
-
       local pause = 1. / 300.
       if nt - last_render >= pause then
          last_render = nt
          render()
       end
 
-
       love.timer.sleep(0.0001)
    end
+
 end
 
 init()
