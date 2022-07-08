@@ -258,6 +258,45 @@ table.insert(tests, {
     end
 })
 
+-- 8
+table.insert(tests, {
+    desc = [[Создание каналов. 
+Смешанные данные - числа и строки. Вставка и удаление в разном порядке.
+Получение значений со стороны создающего потока.]],
+    func = function()
+        -- {{{
+
+        local state = msg.init_messenger()
+        print('state', state)
+
+        local channel_name = "KANAL_331";
+        local channel = msg.new(channel_name);
+
+        for i = 1, 1000 do
+            local num = math.random(1, 10)
+            for j = 1, num do
+                local value: any
+                if math.random() > 0.5 then
+                    value = tonumber(i)
+                else
+                    value = "str" .. tostring(i)
+                end
+                msg.push(channel, value)
+                print('pushed', value)
+            end
+            for j = 1, num do
+                print(msg.pop(channel))
+            end
+        end
+
+        print('----------------------------------')
+        msg.channel_print_strings(channel)
+        msg.channel_print_numbers(channel)
+        print('----------------------------------')
+        -- }}}
+    end
+})
+
 local function callt(index: integer)
     print('Вызов:', colorize("%{yellow}" .. tests[index].desc))
     tests[index].func()
@@ -325,7 +364,8 @@ local function init()
         --callt(4)
         --callt(5)
         --callt(6)
-        callt(7)
+        --callt(7)
+        callt(8)
 
     end) as (boolean, string)
     if not ok then
