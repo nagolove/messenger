@@ -2,47 +2,129 @@ local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 th
 
 
 print('hello. I scene from separated thread')
-
-
 require("love")
 require("love_inc").require_pls_nographic()
-local Pipeline = require('pipeline')
-
 love.filesystem.setRequirePath("?.lua;?/init.lua;scenes/messenger/?.lua")
 
+local Pipeline = require('pipeline')
+local pipeline = Pipeline.new()
 local event_channel = love.thread.getChannel("event_channel")
-
 local colorize = require('ansicolors2').ansicolors
 local mx, my = 0, 0
 local last_render
-
-local pipeline = Pipeline.new()
+local inspect = require('inspect')
 local thread
 
 local msg = require('messenger2')
 
-local inspect = require('inspect')
-
 local Test = {}
-
 
 
 
 local tests = {}
 
 table.insert(tests, {
-   desc = [[Создание каналов. 
+   desc = [[Создание канала. 
 Только числовые данные.
-Получение данных со стороны потока.]],
+Получение данных со стороны создающего канал потока.]],
    func = function()
 
 
       local state = msg.init_messenger()
       print('state', state)
 
-      for i = 1, 5 do
-         msg.new("channel_" .. tonumber(i))
+      local channel_name = "KANAL";
+      local channel = msg.new(channel_name);
+
+      for i = 9, 1, -1 do
+         msg.push(channel, i)
       end
+
+      msg.channel_print_strings(channel)
+      msg.channel_print_numbers(channel)
+
+      local value
+      repeat
+         value = msg.pop(channel)
+         print('popped value', value)
+      until not value
+
+   end,
+})
+
+table.insert(tests, {
+   desc = [[Создание канала. 
+Только строковые данные.
+Получение данных со стороны создающего канал потока.]],
+   func = function()
+
+
+      local state = msg.init_messenger()
+      print('state', state)
+
+      local channel_name = "KANAL";
+      local channel = msg.new(channel_name);
+
+      for i = 9, 1, -1 do
+         local mess = randomFilenameStr(math.random(1, 5));
+         msg.push(channel, "hello_" .. mess .. "_" .. tostring(i))
+      end
+
+      msg.channel_print_strings(channel)
+      msg.channel_print_numbers(channel)
+
+      local value
+      repeat
+         value = msg.pop(channel)
+         print('popped value', value)
+      until not value
+
+   end,
+})
+
+table.insert(tests, {
+   desc = [[Создание канала. 
+Только строковые данные.
+Получение данных со стороны создающего канал потока.
+Заталкивание строки больше разрешенной длины.]],
+   func = function()
+
+
+      local state = msg.init_messenger()
+      print('state', state)
+
+      local channel_name = "KANAL";
+      local channel = msg.new(channel_name);
+
+      for i = 9, 1, -1 do
+         local mess = randomFilenameStr(math.random(1, 5));
+         msg.push(channel, "hello_" .. mess .. "_" .. tostring(i))
+      end
+
+      local mess = randomFilenameStr(math.random(64, 128));
+      msg.push(channel, "hello_" .. mess)
+
+      msg.channel_print_strings(channel)
+      msg.channel_print_numbers(channel)
+
+      local value
+      repeat
+         value = msg.pop(channel)
+         print('popped value', value)
+      until not value
+
+   end,
+})
+
+table.insert(tests, {
+   desc = [[Создание каналов. 
+Только числовые данные.
+Получение данных со стороны другого потока.]],
+   func = function()
+
+
+      local state = msg.init_messenger()
+      print('state', state)
 
       local channel_name = "KANAL_331";
       local channel = msg.new(channel_name);
@@ -50,15 +132,55 @@ table.insert(tests, {
          msg.push(channel, i)
       end
 
-
-
       thread = love.thread.newThread("scenes/messenger/thread.lua")
-      thread:start(channel_name, state, 'test1')
+      thread:start(channel_name, state, 'full_pop')
       print('thread started')
 
       for _ = 9, 1, -1 do
          msg.push(channel, 0)
       end
+
+      msg.channel_print_numbers(channel)
+      print('-----------------------------------')
+      love.timer.sleep(0.1)
+      msg.channel_print_numbers(channel)
+      print('-----------------------------------')
+
+
+   end,
+})
+
+table.insert(tests, {
+   desc = [[Создание каналов. 
+Только числовые данные.
+Получение данных со стороны другого потока.]],
+   func = function()
+
+
+      local state = msg.init_messenger()
+      print('state', state)
+
+      local channel_name = "KANAL_331";
+      local channel = msg.new(channel_name);
+
+      print('msg', inspect(msg))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -84,7 +206,7 @@ table.insert(tests, {
       end
 
       thread = love.thread.newThread("scenes/messenger/thread.lua")
-      thread:start(channel_name, state, 'test2')
+      thread:start(channel_name, state, 'test4')
       print('thread started')
 
       for _ = 9, 1, -1 do
@@ -93,6 +215,11 @@ table.insert(tests, {
 
    end,
 })
+
+local function callt(index)
+   print('Вызов:', colorize("%{yellow}" .. tests[index].desc))
+   tests[index].func()
+end
 
 local function init()
 
@@ -149,7 +276,15 @@ local function init()
    end
 
    local ok, errmsg = pcall(function()
-      tests[1].func()
+
+
+
+
+
+
+
+      callt(5)
+
    end)
    if not ok then
       error("Test failed with: " .. errmsg)
@@ -165,7 +300,6 @@ local function render()
    pipeline:openAndClose('print_fps')
 
    local x, y = love.mouse.getPosition()
-
    local rad = 50
    pipeline:open('circle_under_mouse')
    pipeline:push(y)
@@ -195,11 +329,6 @@ local function mainloop()
                   love.event.quit()
                end
             elseif evtype == "mousepressed" then
-
-
-
-
-
             end
          end
       end
@@ -211,7 +340,6 @@ local function mainloop()
          last_render = nt
          render()
       end
-
 
 
       love.timer.sleep(0.0001)

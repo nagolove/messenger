@@ -11,45 +11,21 @@ local channel_name = vars[1]
 local channel_state = vars[2]
 local test_case = vars[3]
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 assert(type(channel_name) == "string")
 assert(type(channel_state) == "userdata")
 assert(type(test_case) == 'string')
 
 print('thread: channel_name', channel_name)
 print('thread: channel_state', channel_state)
+print('thread: test_case', test_case)
 
 local Tests = {}
 
 
 
-
 local tests = {}
 
-function tests.test1()
+function tests.full_pop()
    msg.init_messenger(channel_state)
    local chan = msg.new(channel_name)
 
@@ -57,9 +33,6 @@ function tests.test1()
    repeat
       local ok, errmsg = pcall(function()
          v = msg.pop(chan)
-
-
-
          print(colorize('%{red}thread: value = ' .. tostring(v)))
       end)
       if not ok then
@@ -67,9 +40,6 @@ function tests.test1()
       end
    until not v
    msg.free(chan)
-end
-
-function tests.test2()
 end
 
 local ok, errmsg = pcall(function()
