@@ -1,4 +1,4 @@
-local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local assert = _tl_compat and _tl_compat.assert or assert; local pcall = _tl_compat and _tl_compat.pcall or pcall
+local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local assert = _tl_compat and _tl_compat.assert or assert; local pcall = _tl_compat and _tl_compat.pcall or pcall; local string = _tl_compat and _tl_compat.string or string
 
 
 print('hi from thread')
@@ -34,6 +34,35 @@ function tests.full_pop()
       local ok, errmsg = pcall(function()
          v = msg.pop(chan)
          print(colorize('%{red}thread: value = ' .. tostring(v)))
+      end)
+      if not ok then
+         print('thread: errmsg', errmsg)
+      end
+   until not v
+   msg.free(chan)
+end
+
+function tests.demand_by_count()
+   print('tests.demand_by_count')
+   msg.init_messenger(channel_state)
+   local chan = msg.new(channel_name)
+
+
+   local count = msg.pop(chan)
+   local message = 'I should demand for %d values.'
+   print(colorize("%{yellow}" .. string.format(message, count)))
+
+   local v
+   local i = 1
+   repeat
+      local ok, errmsg = pcall(function()
+         if count == i then
+            v = nil
+         else
+            v = msg.demand(chan)
+            i = i + 1
+            print(colorize('%{red}thread: value = ' .. tostring(v)))
+         end
       end)
       if not ok then
          print('thread: errmsg', errmsg)

@@ -298,6 +298,123 @@ table.insert(tests, {
    end,
 })
 
+
+table.insert(tests, {
+   desc = [[Создание каналов. 
+Смешанные данные - числа и строки. 
+Получение значений со стороны создающего потока.
+Методы clear(), get_count()
+]],
+   func = function()
+
+
+      local state = msg.init_messenger()
+      print('state', state)
+
+      local channel_name = "KANAL_331";
+      local channel = msg.new(channel_name);
+
+      local function fill()
+         for i = 1, 10 do
+            local value
+            if math.random() > 0.5 then
+               value = tonumber(i)
+            else
+               value = "str" .. tostring(i)
+            end
+            msg.push(channel, value)
+            print('pushed', value)
+         end
+      end
+
+      fill()
+
+      print(colorize('%{blue}----------------------------------'))
+      msg.channel_print_strings(channel)
+      msg.channel_print_numbers(channel)
+      print(colorize('%{blue}----------------------------------'))
+
+      print("msg.get_count(channel)", msg.get_count(channel))
+      print('msg.clear(channel)')
+      msg.clear(channel)
+      print("msg.get_count(channel)", msg.get_count(channel))
+
+      fill()
+
+      print("msg.get_count(channel)", msg.get_count(channel))
+      print('msg.clear(channel)')
+      msg.clear(channel)
+      print("msg.get_count(channel)", msg.get_count(channel))
+
+      print(colorize('%{blue}Тут должен быть пустой вывод, очереди пусты:'))
+      print(colorize('%{blue}----------------------------------'))
+      msg.channel_print_strings(channel)
+      msg.channel_print_numbers(channel)
+      print(colorize('%{blue}----------------------------------'))
+
+   end,
+})
+
+
+table.insert(tests, {
+   desc = [[Создание каналов. 
+Смешанные данные - числа и строки. 
+Получение значений со стороны другого потока через метод channel:demand()
+]],
+   func = function()
+
+
+      local state = msg.init_messenger()
+      print('state', state)
+
+      local channel_name = "KANAL_331";
+      local channel = msg.new(channel_name);
+
+      local count = 10
+
+      local function fill()
+         for i = 1, count do
+            local value
+            if math.random() > 0.5 then
+               value = tonumber(i)
+            else
+               value = "str" .. tostring(i)
+            end
+            msg.push(channel, value)
+            print('pushed', value)
+         end
+      end
+
+      msg.push(channel, count * 2);
+      fill()
+
+      thread = love.thread.newThread("scenes/messenger/thread.lua")
+      thread:start(channel_name, state, 'demand_by_count')
+      print('thread started')
+
+      fill()
+
+      local i = 0
+      repeat
+         i = i + 1
+         if thread:getError() then
+            local errmsg = thread:getError()
+            print('thread:getError()', colorize("%{red}" .. errmsg))
+            break
+         end
+
+
+
+      until not thread:isRunning()
+
+      print(colorize('%{blue}----------------------------------'))
+      msg.channel_print_strings(channel)
+      msg.channel_print_numbers(channel)
+      print(colorize('%{blue}----------------------------------'))
+
+   end,
+})
+
 local function callt(index)
    print('Вызов:', colorize("%{yellow}" .. tests[index].desc))
    tests[index].func()
@@ -366,7 +483,9 @@ local function init()
 
 
 
-      callt(8)
+
+
+      callt(10)
 
    end)
    if not ok then
