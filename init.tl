@@ -289,10 +289,11 @@ table.insert(tests, {
             end
         end
 
-        print('----------------------------------')
+        print(colorize('%{blue}Тут должен быть пустой вывод, очереди пусты:'))
+        print(colorize('%{blue}----------------------------------'))
         msg.channel_print_strings(channel)
         msg.channel_print_numbers(channel)
-        print('----------------------------------')
+        print(colorize('%{blue}----------------------------------'))
         -- }}}
     end
 })
