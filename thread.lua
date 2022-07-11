@@ -42,6 +42,23 @@ function tests.full_pop()
    msg.free(chan)
 end
 
+function tests.push_only_numbers()
+   msg.init_messenger(channel_state)
+   local chan = msg.new(channel_name)
+
+   local v
+   repeat
+      local ok, errmsg = pcall(function()
+         v = msg.pop(chan)
+         print(colorize('%{red}thread: value = ' .. tostring(v)))
+      end)
+      if not ok then
+         print('thread: errmsg', errmsg)
+      end
+   until not v
+   msg.free(chan)
+end
+
 local ok, errmsg = pcall(function()
    tests[test_case]()
 end)
