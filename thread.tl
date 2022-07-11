@@ -42,6 +42,35 @@ function tests.full_pop()
     msg.free(chan)
 end
 
+function tests.demand_by_count()
+    print('tests.demand_by_count')
+    msg.init_messenger(channel_state)
+    local chan = msg.new(channel_name)
+
+    --local count = msg.demand(chan)
+    local count = msg.pop(chan)
+    local message = 'I should demand for %d values.'
+    print(colorize("%{yellow}" .. string.format(message, count)))
+
+    local v: any
+    local i = 1
+    repeat
+        local ok, errmsg = pcall(function()
+            if count == i then
+                v = nil
+            else
+                v = msg.demand(chan)
+                i = i + 1
+                print(colorize('%{red}thread: value = ' .. tostring(v)))
+            end
+        end) as (boolean, string)
+        if not ok then
+            print('thread: errmsg', errmsg)
+        end
+    until not v
+    msg.free(chan)
+end
+
 function tests.push_only_numbers()
     msg.init_messenger(channel_state)
     local chan = msg.new(channel_name)
