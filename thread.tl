@@ -47,7 +47,21 @@ function tests.demand_by_count()
     msg.init_messenger(channel_state)
     local chan = msg.new(channel_name)
 
-    --local count = msg.demand(chan)
+    local qwerty = love.thread.getChannel('qwerty')
+    local t: any
+    repeat
+        t = qwerty:pop()
+        print('t', t)
+    until not t
+
+    print(colorize('%{magenta}----------------------------------'))
+    msg.print(chan)
+    msg.print_strings(chan)
+    msg.print_numbers(chan)
+    print(colorize('%{magenta}----------------------------------'))
+
+    --local count = 
+    --msg.pop(chan)
     local count = msg.pop(chan)
     local message = 'I should demand for %d values.'
     print(colorize("%{yellow}" .. string.format(message, count)))
