@@ -39,10 +39,10 @@ table.insert(tests, {
 
         for i = 9, 1, -1 do
             msg.push(channel, i)
+            print("pushed", i)
         end
 
-        msg.print_strings(channel)
-        msg.print_numbers(channel)
+        msg.print(channel)
 
         local value: any
         repeat
@@ -72,8 +72,7 @@ table.insert(tests, {
             msg.push(channel, "hello_" .. mess .. "_" .. tostring(i))
         end
 
-        msg.print_strings(channel)
-        msg.print_numbers(channel)
+        msg.print(channel)
 
         local value: any
         repeat
@@ -107,8 +106,7 @@ table.insert(tests, {
         local mess = randomFilenameStr(math.random(64, 128));
         msg.push(channel, "hello_" .. mess)
 
-        msg.print_strings(channel)
-        msg.print_numbers(channel)
+        msg.print(channel)
 
         local value: any
         repeat
@@ -144,10 +142,10 @@ table.insert(tests, {
             msg.push(channel, 0)
         end
 
-        msg.print_numbers(channel)
+        msg.print(channel)
         print('-----------------------------------')
         love.timer.sleep(0.1)
-        msg.print_numbers(channel)
+        msg.print(channel)
         print('-----------------------------------')
 
         -- }}}
@@ -251,8 +249,7 @@ table.insert(tests, {
         end
 
         print('----------------------------------')
-        msg.print_strings(channel)
-        msg.print_numbers(channel)
+        msg.print(channel)
         print('----------------------------------')
         -- }}}
     end
@@ -291,8 +288,7 @@ table.insert(tests, {
 
         print(colorize('%{blue}Тут должен быть пустой вывод, очереди пусты:'))
         print(colorize('%{blue}----------------------------------'))
-        msg.print_strings(channel)
-        msg.print_numbers(channel)
+        msg.print(channel)
         print(colorize('%{blue}----------------------------------'))
         -- }}}
     end
@@ -330,8 +326,7 @@ table.insert(tests, {
         fill()
 
         print(colorize('%{blue}----------------------------------'))
-        msg.print_strings(channel)
-        msg.print_numbers(channel)
+        msg.print(channel)
         print(colorize('%{blue}----------------------------------'))
 
         print("msg.get_count(channel)", msg.get_count(channel))
@@ -348,8 +343,7 @@ table.insert(tests, {
 
         print(colorize('%{blue}Тут должен быть пустой вывод, очереди пусты:'))
         print(colorize('%{blue}----------------------------------'))
-        msg.print_strings(channel)
-        msg.print_numbers(channel)
+        msg.print(channel)
         print(colorize('%{blue}----------------------------------'))
         -- }}}
     end
@@ -415,8 +409,7 @@ table.insert(tests, {
         until not thread:isRunning()
 
         print(colorize('%{blue}----------------------------------'))
-        msg.print_strings(channel)
-        msg.print_numbers(channel)
+        msg.print(channel)
         print(colorize('%{blue}----------------------------------'))
         -- }}}
     end
@@ -483,7 +476,8 @@ local function init()
 
     local ok, errmsg = pcall(function()
 
-        --callt(1)
+        callt(1)
+
         --callt(2)
         --callt(3)
         --callt(4)
@@ -492,7 +486,7 @@ local function init()
         --callt(7)
         --callt(8)
         --callt(9)
-        callt(10)
+        --callt(10)
 
     end) as (boolean, string)
     if not ok then
