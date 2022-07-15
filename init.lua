@@ -1,4 +1,4 @@
-local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local math = _tl_compat and _tl_compat.math or math; local pcall = _tl_compat and _tl_compat.pcall or pcall; local table = _tl_compat and _tl_compat.table or table
+local _tl_compat; if (tonumber((_VERSION or ''):match('[%d.]*$')) or 0) < 5.3 then local p, m = pcall(require, 'compat53.module'); if p then _tl_compat = m end end; local assert = _tl_compat and _tl_compat.assert or assert; local ipairs = _tl_compat and _tl_compat.ipairs or ipairs; local math = _tl_compat and _tl_compat.math or math; local pcall = _tl_compat and _tl_compat.pcall or pcall; local table = _tl_compat and _tl_compat.table or table
 
 
 print('hello. I scene from separated thread')
@@ -80,6 +80,8 @@ table.insert(tests, {
          print('popped value', value)
       until not value
 
+      msg.print(channel)
+
    end,
 })
 
@@ -103,8 +105,8 @@ table.insert(tests, {
          msg.push(channel, "hello_" .. mess .. "_" .. tostring(i))
       end
 
-      local mess = randomFilenameStr(math.random(64, 128));
-      msg.push(channel, "hello_" .. mess)
+
+
 
       msg.print(channel)
 
@@ -138,13 +140,14 @@ table.insert(tests, {
       thread:start(channel_name, state, 'full_pop')
       print('thread started')
 
+
       for _ = 9, 1, -1 do
          msg.push(channel, 0)
       end
 
       msg.print(channel)
       print('-----------------------------------')
-      love.timer.sleep(0.1)
+      love.timer.sleep(0.3)
       msg.print(channel)
       print('-----------------------------------')
 
@@ -167,7 +170,7 @@ table.insert(tests, {
       local channel_name = "KANAL_331";
       local channel = msg.new(channel_name);
 
-      for i = 1, msg.QUEUE_SIZE * 2 do
+      for i = 1, msg.QUEUE_SIZE - 10 do
          if math.random() > 0.5 then
             msg.push(channel, i)
          else
@@ -178,6 +181,16 @@ table.insert(tests, {
       thread = love.thread.newThread("scenes/messenger/thread.lua")
       thread:start(channel_name, state, 'full_pop')
       print('thread started')
+
+      love.timer.sleep(0.02)
+
+      for i = 1, msg.QUEUE_SIZE do
+         if math.random() > 0.5 then
+            msg.push(channel, i)
+         else
+            msg.push(channel, "str_" .. tostring(i))
+         end
+      end
 
 
    end,
@@ -213,44 +226,6 @@ table.insert(tests, {
          value = msg.pop(channel)
          print('popped value', value)
       until not value
-
-   end,
-})
-
-
-table.insert(tests, {
-   desc = [[Создание каналов. 
-Смешанные данные - числа и строки. Вставка и удаление в разном порядке.
-Получение значений со стороны создающего потока.]],
-   func = function()
-
-
-      local state = msg.init_messenger()
-      print('state', state)
-
-      local channel_name = "KANAL_331";
-      local channel = msg.new(channel_name);
-
-      for i = 1, 1000 do
-         local num = math.random(1, 10)
-         for j = 1, num do
-            local value
-            if math.random() > 0.5 then
-               value = tonumber(i)
-            else
-               value = "str" .. tostring(i)
-            end
-            msg.push(channel, value)
-            print('pushed', value)
-         end
-         for j = 1, num do
-            print(msg.pop(channel))
-         end
-      end
-
-      print('----------------------------------')
-      msg.print(channel)
-      print('----------------------------------')
 
    end,
 })
@@ -386,12 +361,6 @@ table.insert(tests, {
       thread:start(channel_name, state, 'demand_by_count')
       print('thread started')
 
-      local qwerty = love.thread.getChannel('qwerty')
-      qwerty:push(1)
-      qwerty:push(2)
-      qwerty:push(3)
-      qwerty:push(4)
-
       fill()
 
       local i = 0
@@ -414,6 +383,33 @@ table.insert(tests, {
 
    end,
 })
+
+
+table.insert(tests, {
+   desc = [[Создание каналов с разными именами. Поиск существующих каналов.
+]],
+   func = function()
+
+
+      local state = msg.init_messenger()
+      print('state', state)
+
+      for i = 1, 10 do
+         local ch = msg.new(tostring(i))
+         msg.push(ch, "hello" .. tostring(i))
+      end
+
+      local channel_name = "KANAL_331";
+      local channel = msg.new(channel_name);
+
+      channel = msg.new("1")
+      assert(channel)
+      print(msg.pop(channel))
+
+
+   end,
+})
+
 
 local function callt(index)
    print('Вызов:', colorize("%{yellow}" .. tests[index].desc))
@@ -476,7 +472,6 @@ local function init()
 
    local ok, errmsg = pcall(function()
 
-      callt(1)
 
 
 
@@ -486,7 +481,7 @@ local function init()
 
 
 
-
+      callt(10)
 
    end)
    if not ok then
